@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import BraintreePaymentWebview from "./web/BraintreePaymentWebview";
+import * as brainTreeUtils from "./braintreeUtils";
 
 export default class App extends React.Component {
 
@@ -60,7 +61,7 @@ export default class App extends React.Component {
     this.props.dispatch(actions.navActions.navigateTo("Home"));
   };
 
-  
+
   render() {
     return (
        <BraintreePaymentWebview
