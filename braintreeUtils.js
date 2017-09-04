@@ -1,11 +1,13 @@
-import Secrets from '../secrets';
+import Secrets from "./secrets";
 const URL = Secrets.API_URL;
+import get from "lodash.get";
 
-
-export const getClientToken = () => {
-
+export const getClientToken = (options = {}) => {
   return fetch(URL + "/payment?action=get-client-token", {
-    method: "POST"
+    method: "POST",
+    body: JSON.stringify(
+        options
+    )
   }).then(res => {
     let json = res.json();
     console.log(json);
@@ -18,7 +20,7 @@ export const postPurchase = (nonce, amount) => {
   console.log("in postPurchase");
   return fetch(URL + "/payment?action=purchase-item", {
     method: "POST",
-    body:  JSON.stringify({
+    body: JSON.stringify({
       nonce,
       amount
     })

@@ -4813,6 +4813,10 @@ var _reactDom2 = _interopRequireDefault(_reactDom);
 
 var _reactRedux = __webpack_require__(73);
 
+var _actions = __webpack_require__(225);
+
+var _actions2 = _interopRequireDefault(_actions);
+
 var _store = __webpack_require__(100);
 
 var _renderIf = __webpack_require__(103);
@@ -4840,14 +4844,29 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 
 
 var Button = _glamorous2.default.span({
-  borderRadius: '2px',
-  padding: '2px 10px 2px 10px',
+  borderRadius: "2px",
+  padding: "2px 10px 2px 10px",
   backgroundColor: "#2ecc71",
-  fontSize: '1.25em',
+  fontSize: "1.25em",
   color: "white",
   fontFamily: "arial",
   boxShadow: "0 1px 4px rgba(0, 0, 0, .6)"
 });
+var PaymentBackground = _glamorous2.default.div({
+  backgroundColor: "#FED2F1",
+  position: "absolute",
+  top: 0,
+  bottom: 0,
+  left: 0,
+  right: 0
+});
+
+var PrintElement = function PrintElement(data) {
+  var el = document.createElement("pre");
+  var str = JSON.stringify(data);
+  el.innerHTML = str;
+  document.getElementById("messages").appendChild(el);
+};
 
 var BraintreeHTMLComponent = function (_React$Component) {
   _inherits(BraintreeHTMLComponent, _React$Component);
@@ -4857,12 +4876,30 @@ var BraintreeHTMLComponent = function (_React$Component) {
 
     var _this = _possibleConstructorReturn(this, (BraintreeHTMLComponent.__proto__ || Object.getPrototypeOf(BraintreeHTMLComponent)).call(this));
 
+    _this.componentDidMount = function () {
+      try {
+        window.postMessage("componentDidMount", "*");
+        PrintElement("componentDidMount success");
+      } catch (error) {
+        PrintElement(error);
+      }
+
+      _this.props.dispatch(_actions2.default.setHTMLMessage("Hello from HTML"));
+    };
+
     _this.componentWillReceiveProps = function (nextProps) {
-      alert(nextProps);
       console.log({ nextProps: nextProps });
+      PrintElement({
+        msg: "componentWillReceiveProps",
+        nextProps: nextProps
+      });
       if (nextProps.paymentStatus !== _this.state.currentPaymentStatus) {
         switch (nextProps.paymentStatus) {
           case "CLIENT_TOKEN_RECEVIED":
+            PrintElement({
+              msg: "CLIENT_TOKEN_RECEVIED",
+              token: _this.props.componentState.clientToken
+            });
             getBraintreeUIElement(_this.props.componentState.clientToken);
             break;
           default:
@@ -4876,32 +4913,40 @@ var BraintreeHTMLComponent = function (_React$Component) {
 
     _this.getBraintreeUIElement = function (clientToken) {
       var that = _this;
-      console.log("getBraintreeUIElement");
-      _this.props.dispatch(actions.updatePaymentStatus("REQUEST_UI_PENDING"));
+      PrintElement({
+        msg: "getBraintreeUIElement",
+        token: clientToken
+      });
+      _this.props.dispatch(_actions2.default.updatePaymentStatus("REQUEST_UI_PENDING"));
 
       _braintreeWebDropIn2.default.create({
-        authorization: _this.state.clientToken,
+        authorization: _this.props.componentState.clientToken,
         container: "#dropin-container"
       }).then(function (instance) {
-        _this.props.dispatch(actions.updatePaymentStatus("REQUEST_UI_FULFILLED", {
+        _this.props.dispatch(_actions2.default.updatePaymentStatus("REQUEST_UI_FULFILLED", {
           instance: instance
         }));
       }).catch(function (err) {
         // Handle any errors that might've occurred when creating Drop-in
-        this.props.dispatch(actions.updatePaymentStatus("REQUEST_UI_REJECTED", {
+        this.props.dispatch(_actions2.default.updatePaymentStatus("REQUEST_UI_REJECTED", {
           err: err
         }));
       });
     };
 
-    _this.render = function () {
-      console.log("from store: ", _this.props.componentState.testData);
+    _this.submitPurchase = function () {
+      PrintElement({
+        msg: "submitPurchase clicked"
+      });
+      _this.props.dispatch(_actions2.default.setHTMLMessage("submitPurchase clicked"));
+    };
 
+    _this.render = function () {
       return _react2.default.createElement(
         _reactRedux.Provider,
         { store: _store.store },
         _react2.default.createElement(
-          "div",
+          PaymentBackground,
           {
             ref: function ref(component) {
               _this.webComponent = component;
@@ -4914,10 +4959,16 @@ var BraintreeHTMLComponent = function (_React$Component) {
             "HTML component"
           ),
           _react2.default.createElement(
+            "div",
+            null,
+            _this.props.componentState.testData
+          ),
+          _react2.default.createElement(
             Button,
             { id: "submit-button", onClick: _this.submitPurchase },
             "Submit Purchase"
-          )
+          ),
+          _react2.default.createElement("div", { id: "messages" })
         )
       );
     };
@@ -4927,165 +4978,6 @@ var BraintreeHTMLComponent = function (_React$Component) {
     };
     return _this;
   }
-  /*constructor() {
-    super();
-    this.state = {
-      paymentState: null,
-      clientToken: null,
-      instance: null,
-      nonce: null,
-      msg: null,
-      message: "blank"
-    };
-  }
-    componentDidMount = () => {
-     // add an event listener for messages from the parent React Native component
-    this.webComponent.addEventListener(
-      "message",
-      (event) => {
-        alert("Received post message", that.handlePostMesage);
-      },
-      false
-    );
-    this.setState({ message: "componentDidMount" });
-      window.postMessage(
-      JSON.stringify({
-        type: "event",
-        meta: {
-          eventName: "eventName"
-        },
-        payload: "eventData"
-      }),
-      "*"
-    );
-  };
-    componentWillUnmount() {
-    // Make sure to remove the DOM listener when the component is unmounted.
-    this.webComponent.removeEventListener("message", this.handlePostMessage);
-  }
-    // handle messages received from parrent
-  handlePostMessage = event => {
-    this.setState({ message: { event } });
-    console.log("handlePostMesage:", event);
-    alert({ event });
-  };
-    getClientToken = () => {
-    // get handle to that for use later
-    let that = this;
-      // get the client token from our server
-    // and ensure state variables are empty of previous information
-    this.setState(
-      {
-        paymentState: "RequestClientTokenPending",
-        clientToken: null,
-        instance: null,
-        nonce: null,
-        msg: null
-      },
-      () => {
-        brainTreeUtils.getClientToken().then(res => {
-          console.log({ res });
-          if (res.type === "success") {
-            let clientToken = res.response.result.clientToken;
-            this.setState({
-              clientToken,
-              paymentState: "RequestClientTokenFulfilled"
-            });
-              // request the braintree UI
-            this.createBraintreeUI();
-          } else {
-            this.setState({
-              paymentState: "RequestClientTokenRejected"
-            });
-          }
-        });
-      }
-    );
-  };
-    createBraintreeUI = () => {
-    
-  };
-    submitPaymentMethod = () => {
-    this.state.instance.requestPaymentMethod(function(err, payload) {
-      if (err) {
-        this.setState({
-          paymentState: "SubmitPaymentMethodRejected"
-        });
-      } else {
-        // Submit payload.nonce to your server
-        console.log({ payload });
-        this.setState({
-          paymentState: "SubmitPaymentMethodFulfilled",
-          nonce: payload
-        });
-      }
-    });
-  };
-    postPurchase = () => {
-    brainTreeUtils
-      .postPurchase(json.payload.nonce, this.props.cart.totalPrice)
-      .then(response => {
-        console.log({ response });
-        if (response.type === "success") {
-          this.webview.emit("purchaseSuccess");
-        } else {
-          this.webview.emit("purchaseFailure", { payload: json.err });
-        }
-      });
-  };
-    renderBody = state => {
-    console.log("here");
-    // select renderable based on the payment state
-    switch (state) {
-      case "RequestClientTokenPending":
-        return <Spinner size={20} />;
-        break;
-      case "RequestClientTokenFufilled":
-        return <div>RequestClientTokenFufilled</div>;
-        break;
-      case "RequestClientTokenRejected":
-        return <div>RequestClientTokenRejected</div>;
-        break;
-      case "RequestUIPending":
-        return <Spinner size={20} />;
-        break;
-      case "RequestUIFullfilled":
-        return (
-          <div>
-            <button id="submit-button" onClick={this.submitPaymentMethod}>
-              Submit Purchase
-            </button>
-          </div>
-        );
-        break;
-      case "RequestUIRejected":
-        return <div>RequestUIRejected</div>;
-        break;
-      case "SubmitPaymentMethodPending":
-        return <Spinner size={20} />;
-        break;
-      case "SubmitPaymentMethodFulfilled":
-        return <div>SubmitPaymentMethodFulfilled</div>;
-        break;
-      case "SubmitPaymentMethodRejected":
-        return <div>SubmitPaymentMethodRejected</div>;
-        break;
-      case "SubmitNoncePending":
-        return <Spinner size={20} />;
-        break;
-      case "SubmitNonceFulfilled":
-        return <div>SubmitNonceFulfilled</div>;
-        break;
-      case "SubmitNonceRejected":
-        return <div>SubmitNonceRejected</div>;
-        break;
-      default:
-        return <div>default</div>;
-        break;
-    }
-  };
-  */
-
 
   return BraintreeHTMLComponent;
 }(_react2.default.Component);
@@ -5110,6 +5002,165 @@ function connectWithStore(store, WrappedComponent) {
 var BraintreeHTML = connectWithStore(_store.store, BraintreeHTMLComponent, mapStateToProps);
 
 _reactDom2.default.render(_react2.default.createElement(BraintreeHTML, null), document.getElementById("root"));
+
+/*constructor() {
+  super();
+  this.state = {
+    paymentState: null,
+    clientToken: null,
+    instance: null,
+    nonce: null,
+    msg: null,
+    message: "blank"
+  };
+}
+  componentDidMount = () => {
+   // add an event listener for messages from the parent React Native component
+  this.webComponent.addEventListener(
+    "message",
+    (event) => {
+      alert("Received post message", that.handlePostMesage);
+    },
+    false
+  );
+  this.setState({ message: "componentDidMount" });
+    window.postMessage(
+    JSON.stringify({
+      type: "event",
+      meta: {
+        eventName: "eventName"
+      },
+      payload: "eventData"
+    }),
+    "*"
+  );
+};
+  componentWillUnmount() {
+  // Make sure to remove the DOM listener when the component is unmounted.
+  this.webComponent.removeEventListener("message", this.handlePostMessage);
+}
+  // handle messages received from parrent
+handlePostMessage = event => {
+  this.setState({ message: { event } });
+  console.log("handlePostMesage:", event);
+  alert({ event });
+};
+  getClientToken = () => {
+  // get handle to that for use later
+  let that = this;
+    // get the client token from our server
+  // and ensure state variables are empty of previous information
+  this.setState(
+    {
+      paymentState: "RequestClientTokenPending",
+      clientToken: null,
+      instance: null,
+      nonce: null,
+      msg: null
+    },
+    () => {
+      brainTreeUtils.getClientToken().then(res => {
+        console.log({ res });
+        if (res.type === "success") {
+          let clientToken = res.response.result.clientToken;
+          this.setState({
+            clientToken,
+            paymentState: "RequestClientTokenFulfilled"
+          });
+            // request the braintree UI
+          this.createBraintreeUI();
+        } else {
+          this.setState({
+            paymentState: "RequestClientTokenRejected"
+          });
+        }
+      });
+    }
+  );
+};
+  createBraintreeUI = () => {
+  
+};
+  submitPaymentMethod = () => {
+  this.state.instance.requestPaymentMethod(function(err, payload) {
+    if (err) {
+      this.setState({
+        paymentState: "SubmitPaymentMethodRejected"
+      });
+    } else {
+      // Submit payload.nonce to your server
+      console.log({ payload });
+      this.setState({
+        paymentState: "SubmitPaymentMethodFulfilled",
+        nonce: payload
+      });
+    }
+  });
+};
+  postPurchase = () => {
+  brainTreeUtils
+    .postPurchase(json.payload.nonce, this.props.cart.totalPrice)
+    .then(response => {
+      console.log({ response });
+      if (response.type === "success") {
+        this.webview.emit("purchaseSuccess");
+      } else {
+        this.webview.emit("purchaseFailure", { payload: json.err });
+      }
+    });
+};
+  renderBody = state => {
+  console.log("here");
+  // select renderable based on the payment state
+  switch (state) {
+    case "RequestClientTokenPending":
+      return <Spinner size={20} />;
+      break;
+    case "RequestClientTokenFufilled":
+      return <div>RequestClientTokenFufilled</div>;
+      break;
+    case "RequestClientTokenRejected":
+      return <div>RequestClientTokenRejected</div>;
+      break;
+    case "RequestUIPending":
+      return <Spinner size={20} />;
+      break;
+    case "RequestUIFullfilled":
+      return (
+        <div>
+          <button id="submit-button" onClick={this.submitPaymentMethod}>
+            Submit Purchase
+          </button>
+        </div>
+      );
+      break;
+    case "RequestUIRejected":
+      return <div>RequestUIRejected</div>;
+      break;
+    case "SubmitPaymentMethodPending":
+      return <Spinner size={20} />;
+      break;
+    case "SubmitPaymentMethodFulfilled":
+      return <div>SubmitPaymentMethodFulfilled</div>;
+      break;
+    case "SubmitPaymentMethodRejected":
+      return <div>SubmitPaymentMethodRejected</div>;
+      break;
+    case "SubmitNoncePending":
+      return <Spinner size={20} />;
+      break;
+    case "SubmitNonceFulfilled":
+      return <div>SubmitNonceFulfilled</div>;
+      break;
+    case "SubmitNonceRejected":
+      return <div>SubmitNonceRejected</div>;
+      break;
+    default:
+      return <div>default</div>;
+      break;
+  }
+};
+*/
 
 /***/ }),
 /* 67 */
@@ -12792,6 +12843,7 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 
 var defaultState = exports.defaultState = {
   componentState: {
+    clientToken: '',
     paymentStatus: undefined,
     showActivityIndicator: false,
     testData: 'this is some test data'
@@ -12822,31 +12874,37 @@ var store = exports.store = (0, _redux.createStore)(_reducers2.default, defaultS
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-
-var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
-
 exports.default = reducer;
 function reducer() {
   var componentState = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
   var action = arguments[1];
 
   switch (action.type) {
-    case "UPDATE_PAYMENT_STATUS":
-      /* return Object.assign({}, componentState, {
-        paymentStatus: action.paymentStatus,
-        clientToken: actions.options.hasOwnProperty('clientToken')?
-        actions.options.clientToken: componentState.clientToken
-      }); */
+    case "SET_CLIENT_TOKEN":
+      debugger;
+      return Object.assign({}, componentState, {
+        clientToken: action.clientToken,
+        paymentStatus: "CLIENT_TOKEN_RECEIVED"
+      });
 
-      return Object.assign({}, componentState, _extends({
+    case "UPDATE_PAYMENT_STATUS":
+      return Object.assign({}, componentState, {
         paymentStatus: action.paymentStatus
-      }, actions.options));
+      });
 
     case "SHOW_ACTIVITY_INDICATOR":
       return Object.assign({}, componentState, { showActivityIndicator: true });
     case "HIDE_ACTIVITY_INDICATOR":
       return Object.assign({}, componentState, {
         showActivityIndicator: false
+      });
+    case "SET_HTML_MESSAGE":
+      return Object.assign({}, componentState, {
+        messageFromHTML: action.msg
+      });
+    case "CHANGE_TEST_STATEMENT":
+      return Object.assign({}, componentState, {
+        testData: action.msg
       });
     default:
       return componentState;
@@ -27375,6 +27433,56 @@ function Umul32(n, m) {
   var res = nlo * m + ((nhi * m & 0xffff) << 16) | 0;
   return res;
 }
+
+/***/ }),
+/* 225 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+var actions = {
+  setClientToken: function setClientToken(clientToken) {
+    return {
+      type: "SET_CLIENT_TOKEN",
+      clientToken: clientToken
+    };
+  },
+  updatePaymentStatus: function updatePaymentStatus(paymentStatus, options) {
+    return {
+      type: "UPDATE_PAYMENT_STATUS",
+      paymentStatus: paymentStatus,
+      options: options
+    };
+  },
+  showActivityIndicator: function showActivityIndicator() {
+    return {
+      type: "SHOW_ACTIVITY_INDICATOR"
+    };
+  },
+  hideActivityIndicator: function hideActivityIndicator() {
+    return {
+      type: "HIDE_ACTIVITY_INDICATOR"
+    };
+  },
+  setHTMLMessage: function setHTMLMessage(msg) {
+    return {
+      type: "SET_HTML_MESSAGE",
+      msg: msg
+    };
+  },
+  changeTestStatement: function changeTestStatement(msg) {
+    return {
+      type: "CHANGE_TEST_STATEMENT",
+      msg: msg
+    };
+  }
+};
+
+exports.default = actions;
 
 /***/ })
 /******/ ]);

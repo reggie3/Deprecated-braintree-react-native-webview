@@ -3,21 +3,37 @@
 import React from "./react.min";
 import ReactDOM from "./react-dom.min";
 import { Provider, connect } from "react-redux";
-import { store } from "./store";
+import actions from "./actions";
+import {store} from "./store";
 import renderIf from "render-if";
 import { Spinner } from "react-activity";
 import dropin from "braintree-web-drop-in";
 import glamorous from "glamorous";
 
 const Button = glamorous.span({
-  borderRadius: '2px',
-  padding: '2px 10px 2px 10px',
+  borderRadius: "2px",
+  padding: "2px 10px 2px 10px",
   backgroundColor: "#2ecc71",
-  fontSize: '1.25em',
+  fontSize: "1.25em",
   color: "white",
   fontFamily: "arial",
   boxShadow: "0 1px 4px rgba(0, 0, 0, .6)"
-})
+});
+const PaymentBackground = glamorous.div({
+  backgroundColor: "#FED2F1",
+  position: "absolute",
+  top: 0,
+  bottom: 0,
+  left: 0,
+  right: 0
+});
+
+const PrintElement = data => {
+  var el = document.createElement("pre");
+  var str = JSON.stringify(data);
+  el.innerHTML = str;
+  document.getElementById("messages").appendChild(el);
+};
 
 class BraintreeHTMLComponent extends React.Component {
   constructor() {
@@ -27,12 +43,30 @@ class BraintreeHTMLComponent extends React.Component {
     };
   }
 
+  componentDidMount = () => {
+    try {
+      window.postMessage("componentDidMount", "*");
+      PrintElement("componentDidMount success");
+    } catch (error) {
+      PrintElement(error);
+    }
+
+    this.props.dispatch(actions.setHTMLMessage("Hello from HTML"));
+  };
+
   componentWillReceiveProps = nextProps => {
-    alert(nextProps);
     console.log({ nextProps });
+    PrintElement({
+      msg: "componentWillReceiveProps",
+      nextProps
+    });
     if (nextProps.paymentStatus !== this.state.currentPaymentStatus) {
       switch (nextProps.paymentStatus) {
         case "CLIENT_TOKEN_RECEVIED":
+          PrintElement({
+            msg: "CLIENT_TOKEN_RECEVIED",
+            token: this.props.componentState.clientToken
+          });
           getBraintreeUIElement(this.props.componentState.clientToken);
           break;
         default:
@@ -46,12 +80,15 @@ class BraintreeHTMLComponent extends React.Component {
 
   getBraintreeUIElement = clientToken => {
     let that = this;
-    console.log("getBraintreeUIElement");
+    PrintElement({
+      msg: "getBraintreeUIElement",
+      token: clientToken
+    });
     this.props.dispatch(actions.updatePaymentStatus("REQUEST_UI_PENDING"));
 
     dropin
       .create({
-        authorization: this.state.clientToken,
+        authorization: this.props.componentState.clientToken,
         container: "#dropin-container"
       })
       .then(instance => {
@@ -70,6 +107,59 @@ class BraintreeHTMLComponent extends React.Component {
         );
       });
   };
+     submitPurchase = () => {
+    PrintElement({
+      msg: "submitPurchase clicked"
+    });
+    this.props.dispatch(actions.setHTMLMessage("submitPurchase clicked"));
+  };
+
+  render = () => {
+    return (
+      <Provider store={store}>
+        <PaymentBackground
+          ref={component => {
+            this.webComponent = component;
+          }}
+        >
+          <div id="dropin-container" />
+          <div>HTML component</div>
+          <div>{this.props.componentState.testData}</div>
+          <Button id="submit-button" onClick={this.submitPurchase}>
+            Submit Purchase
+          </Button>
+          <div id="messages" />
+        </PaymentBackground>
+      </Provider>
+    );
+  };
+}
+
+const mapStateToProps = state => {
+  return Object.assign(
+    {},
+    {
+      componentState: state.componentState
+    }
+  );
+};
+
+function connectWithStore(store, WrappedComponent, ...args) {
+  var ConnectedWrappedComponent = connect(...args)(WrappedComponent);
+  return function(props) {
+    return <ConnectedWrappedComponent {...props} store={store} />;
+  };
+}
+
+const BraintreeHTML = connectWithStore(
+  store,
+  BraintreeHTMLComponent,
+  mapStateToProps
+);
+
+ReactDOM.render(<BraintreeHTML />, document.getElementById("root"));
+
+
   /*constructor() {
     super();
     this.state = {
@@ -239,47 +329,5 @@ class BraintreeHTMLComponent extends React.Component {
     }
   };
  */
-  render = () => {
-    console.log("from store: ", this.props.componentState.testData);
 
-    return (
-      <Provider store={store}>
-        <div
-          ref={component => {
-            this.webComponent = component;
-          }}
-        >
-          <div id="dropin-container" />
-          <div>HTML component</div>
-          <Button id="submit-button" onClick={this.submitPurchase}>
-            Submit Purchase
-          </Button>
-        </div>
-      </Provider>
-    );
-  };
-}
-
-const mapStateToProps = state => {
-  return Object.assign(
-    {},
-    {
-      componentState: state.componentState
-    }
-  );
-};
-
-function connectWithStore(store, WrappedComponent, ...args) {
-  var ConnectedWrappedComponent = connect(...args)(WrappedComponent);
-  return function(props) {
-    return <ConnectedWrappedComponent {...props} store={store} />;
-  };
-}
-
-const BraintreeHTML = connectWithStore(
-  store,
-  BraintreeHTMLComponent,
-  mapStateToProps
-);
-
-ReactDOM.render(<BraintreeHTML />, document.getElementById("root"));
+ 

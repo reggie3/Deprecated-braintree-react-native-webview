@@ -1,15 +1,15 @@
 export default function reducer(componentState = {}, action) {
   switch (action.type) {
-    case "UPDATE_PAYMENT_STATUS":
-      /* return Object.assign({}, componentState, {
-        paymentStatus: action.paymentStatus,
-        clientToken: actions.options.hasOwnProperty('clientToken')?
-        actions.options.clientToken: componentState.clientToken
-      }); */
-
+    case "SET_CLIENT_TOKEN":
+    debugger;
       return Object.assign({}, componentState, {
-        paymentStatus: action.paymentStatus,
-        ...actions.options
+        clientToken: action.clientToken,
+        paymentStatus: "CLIENT_TOKEN_RECEIVED"
+      });
+
+    case "UPDATE_PAYMENT_STATUS":
+      return Object.assign({}, componentState, {
+        paymentStatus: action.paymentStatus
       });
 
     case "SHOW_ACTIVITY_INDICATOR":
@@ -18,6 +18,14 @@ export default function reducer(componentState = {}, action) {
       return Object.assign({}, componentState, {
         showActivityIndicator: false
       });
+      case "SET_HTML_MESSAGE":
+      return Object.assign({}, componentState, {
+        messageFromHTML: action.msg
+      })
+    case "CHANGE_TEST_STATEMENT":
+      return Object.assign({}, componentState, {
+        testData: action.msg
+      })
     default:
       return componentState;
   }

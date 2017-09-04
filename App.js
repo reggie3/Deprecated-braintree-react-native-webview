@@ -1,10 +1,10 @@
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import React from "react";
+import { StyleSheet, Text, View } from "react-native";
 import BraintreePaymentWebview from "./web/BraintreePaymentWebview";
 import * as brainTreeUtils from "./braintreeUtils";
 
-export default class App extends React.Component {
 
+export default class App extends React.Component {
   constructor() {
     super();
     this.state = {
@@ -15,10 +15,7 @@ export default class App extends React.Component {
 
   componentDidMount = () => {
     brainTreeUtils
-      .getClientToken({
-        merchantAccountID: null,
-        customerID: '12345678'
-      })
+      .getClientToken()
       .then(response => {
         // console.log({ response });
         if (response.type === "success") {
@@ -37,7 +34,7 @@ export default class App extends React.Component {
   nonceObtainedCallback = nonce => {
     // make api call to purchase the item using the nonce received
     // from BraintreeWebView Component
-    
+
     brainTreeUtils
       .postPurchase(nonce, this.props.cart.totalPrice, {})
       .then(response => {
@@ -61,18 +58,26 @@ export default class App extends React.Component {
     this.props.dispatch(actions.navActions.navigateTo("Home"));
   };
 
-
   render() {
     return (
-       <BraintreePaymentWebview
-            clientToken={this.state.clientToken}
-            nonceObtainedCallback={this.nonceObtainedCallback}
-            paymentAPIResponse={this.state.paymentAPIResponse}
-            navigationBackCallback={this.navigationBackCallback}
-            options={{
-              creditCard: true
-            }}
-          />
+      <View
+        style={{
+          paddingHorizontal: 10,
+          paddingVertical: 20,
+          backgroundColor: "goldenrod",
+          flex: 1
+        }}
+      >
+        <BraintreePaymentWebview
+          clientToken={this.state.clientToken}
+          nonceObtainedCallback={this.nonceObtainedCallback}
+          paymentAPIResponse={this.state.paymentAPIResponse}
+          navigationBackCallback={this.navigationBackCallback}
+          options={{
+            creditCard: true
+          }}
+        />
+      </View>
     );
   }
 }
@@ -80,8 +85,8 @@ export default class App extends React.Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center"
+  }
 });

@@ -4,6 +4,7 @@ import rootReducer from "./reducers";
 
 export let defaultState = {
   componentState: {
+    clientToken: '',
     paymentStatus: undefined,
     showActivityIndicator: false,
     testData: 'this is some test data'

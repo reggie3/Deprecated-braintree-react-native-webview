@@ -5,47 +5,50 @@ import { Provider, connect } from "react-redux";
 import { store } from "./store";
 
 
-
 class BraintreePaymentWebviewComponent extends React.Component {
   constructor() {
     super();
     this.state = {
-      currentPaymentStatus: null,
+      currentPaymentStatus: null
     };
   }
 
-  componentDidMount() {
-    // register listeners to listen for events from the html
-    // we'll receive a nonce once the requestPaymentMethodComplete is completed
-    this.props.dispatch(
-      actions.updatePaymentStatus("CLIENT_TOKEN_RECEVIED", {
-        clientToken: this.props.clientToken
-      })
-    );
+  componentWillMount = ()=>{
+    this.props.dispatch(actions.changeTestStatement("Braintree Payment Webview Mounted"));
   }
 
   componentWillReceiveProps = nextProps => {
     console.log({ nextProps });
+    if (!this.props.componentState.clientToken && nextProps.clientToken) {
+      this.props.dispatch(actions.setClientToken(nextProps.clientToken));
+    }
+
     if (nextProps.paymentStatus !== this.state.currentPaymentStatus) {
-      switch(nextProps.paymentStatus){
+      switch (nextProps.paymentStatus) {
+        case "CLIENT_TOKEN_RECEIVED":
+          break;
         default:
-          console.log('ignoring paymentStatusChange');
-        break;
+          console.log("ignoring paymentStatusChange");
+          break;
       }
       console.log(nextProps.paymentAPIResponse);
       this.setState({ currentPaymentStatus: nextProps.paymentStatus });
     }
   };
 
+  onMessage = event => {
+    debugger;
+    console.log("from HTML: ", event.nativeEvent.data);
+  };
+
   render() {
-    console.log("from store: ", this.props.componentState.testData);
 
     return (
       <Provider store={store}>
         <View
           style={{
             flex: 1,
-            backgroundColor: `blue`
+            backgroundColor: `lightblue`
           }}
         >
           <WebView
@@ -53,6 +56,9 @@ class BraintreePaymentWebviewComponent extends React.Component {
             source={require("../dist/index.html")}
             style={{ flex: 1 }}
             ref={webview => (this.webview = webview)}
+            onMessage={this.onMessage}
+            componentState={this.props.componentState}
+            actions={actions}
           />
           <Text>Webview Component</Text>
         </View>
@@ -65,7 +71,7 @@ const mapStateToProps = state => {
   return Object.assign(
     {},
     {
-      componentState: state.componentState
+      componentState: state.componentState,
     }
   );
 };
