@@ -4,7 +4,6 @@ import actions from "./actions";
 import { Provider, connect } from "react-redux";
 import { store } from "./store";
 
-
 class BraintreePaymentWebviewComponent extends React.Component {
   constructor() {
     super();
@@ -13,27 +12,31 @@ class BraintreePaymentWebviewComponent extends React.Component {
     };
   }
 
-  componentWillMount = ()=>{
-    this.props.dispatch(actions.changeTestStatement("Braintree Payment Webview Mounted"));
-  }
+  componentWillMount = () => {
+    this.props.dispatch(
+      actions.changeTestStatement("Braintree Payment Webview Mounted")
+    );
+  };
 
   componentWillReceiveProps = nextProps => {
-    console.log({ nextProps });
-    if (!this.props.componentState.clientToken && nextProps.clientToken) {
-      this.props.dispatch(actions.setClientToken(nextProps.clientToken));
+
+    if (!this.state.clientToken && nextProps.clientToken) {
+      debugger;
+      this.sendMessageToWebview("CLIENT_TOKEN_RECEIVED", nextProps.clientToken);
+      this.setState({ clientToken: nextProps.clientToken });
     }
 
-    if (nextProps.paymentStatus !== this.state.currentPaymentStatus) {
-      switch (nextProps.paymentStatus) {
-        case "CLIENT_TOKEN_RECEIVED":
-          break;
-        default:
-          console.log("ignoring paymentStatusChange");
-          break;
-      }
-      console.log(nextProps.paymentAPIResponse);
-      this.setState({ currentPaymentStatus: nextProps.paymentStatus });
-    }
+  };
+
+  sendMessageToWebview = (eventName, eventData) => {
+    this.webview.postMessage(
+      JSON.stringify({
+        type: "event",
+         name:  eventName,
+        
+        payload: eventData
+      })
+    );
   };
 
   onMessage = event => {
@@ -42,7 +45,6 @@ class BraintreePaymentWebviewComponent extends React.Component {
   };
 
   render() {
-
     return (
       <Provider store={store}>
         <View
@@ -57,8 +59,6 @@ class BraintreePaymentWebviewComponent extends React.Component {
             style={{ flex: 1 }}
             ref={webview => (this.webview = webview)}
             onMessage={this.onMessage}
-            componentState={this.props.componentState}
-            actions={actions}
           />
           <Text>Webview Component</Text>
         </View>
@@ -71,7 +71,7 @@ const mapStateToProps = state => {
   return Object.assign(
     {},
     {
-      componentState: state.componentState,
+      componentState: state.componentState
     }
   );
 };

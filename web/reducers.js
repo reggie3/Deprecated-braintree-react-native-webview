@@ -1,7 +1,6 @@
 export default function reducer(componentState = {}, action) {
   switch (action.type) {
     case "SET_CLIENT_TOKEN":
-    debugger;
       return Object.assign({}, componentState, {
         clientToken: action.clientToken,
         paymentStatus: "CLIENT_TOKEN_RECEIVED"
