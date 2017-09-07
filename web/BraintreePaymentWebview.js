@@ -19,28 +19,25 @@ class BraintreePaymentWebviewComponent extends React.Component {
   };
 
   componentWillReceiveProps = nextProps => {
-
     if (!this.state.clientToken && nextProps.clientToken) {
-      debugger;
+      // debugger;
       this.sendMessageToWebview("CLIENT_TOKEN_RECEIVED", nextProps.clientToken);
       this.setState({ clientToken: nextProps.clientToken });
     }
-
   };
 
   sendMessageToWebview = (eventName, eventData) => {
     this.webview.postMessage(
       JSON.stringify({
         type: "event",
-         name:  eventName,
-        
+        name: eventName,
         payload: eventData
       })
     );
   };
 
   onMessage = event => {
-    debugger;
+    // debugger;
     console.log("from HTML: ", event.nativeEvent.data);
   };
 

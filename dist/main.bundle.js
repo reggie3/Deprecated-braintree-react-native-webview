@@ -4031,18 +4031,23 @@ var BraintreeHTML = function (_React$Component) {
 
     _this.addEventListeners = function () {
       // add an event listener to receive messages from parent WebView
-      document.addEventListener("message", _this.handleMessage);
-      window.addEventListener("message", _this.handleMessage);
+      if (document) {
+        document.addEventListener("message", _this.handleMessage);
+      }
+      if (window) {
+        window.addEventListener("message", _this.handleMessage);
+      }
     };
 
     _this.handleMessage = function (event) {
-      debugger;
-      console.log("Received post message", event);
-      var data = JSON.parse(event.nativeEvent.data);
-      PrintElement(data.name.eventName);
-      switch (data.name.eventName) {
+      // debugger;
+      // console.log("Received post message", event);
+      var data = JSON.parse(event.data);
+      PrintElement(data);
+      switch (data.name) {
         case "CLIENT_TOKEN_RECEIVED":
-          getBraintreeUIElement(data.payload.clientToken);
+          PrintElement(data.payload);
+          _this.getBraintreeUIElement(data.payload);
           break;
         default:
           PrintElement("Unhandled case in handleMessage");
@@ -4051,11 +4056,8 @@ var BraintreeHTML = function (_React$Component) {
     };
 
     _this.getBraintreeUIElement = function (clientToken) {
+      PrintElement(clientToken);
       var that = _this;
-      PrintElement({
-        msg: "getBraintreeUIElement",
-        token: clientToken
-      });
 
       // create the Braintree UI in the div
       _braintreeWebDropIn2.default.create({

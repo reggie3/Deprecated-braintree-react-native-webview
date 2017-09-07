@@ -93,18 +93,23 @@ class BraintreeHTML extends React.Component {
 
   addEventListeners = () => {
     // add an event listener to receive messages from parent WebView
-    document.addEventListener("message", this.handleMessage);
-    window.addEventListener("message", this.handleMessage);
+    if (document) {
+      document.addEventListener("message", this.handleMessage);
+    }
+    if (window) {
+      window.addEventListener("message", this.handleMessage);
+    }
   };
 
   handleMessage = event => {
-    debugger;
-    console.log("Received post message", event);
-    let data = JSON.parse(event.nativeEvent.data);
-    PrintElement(data.name.eventName);
-    switch (data.name.eventName) {
+    // debugger;
+    // console.log("Received post message", event);
+    let data = JSON.parse(event.data);
+    PrintElement(data);
+    switch (data.name) {
       case "CLIENT_TOKEN_RECEIVED":
-        getBraintreeUIElement(data.payload.clientToken);
+         PrintElement(data.payload);
+        this.getBraintreeUIElement(data.payload);
         break;
       default:
         PrintElement("Unhandled case in handleMessage");
@@ -114,11 +119,9 @@ class BraintreeHTML extends React.Component {
 
   // create the Braintree UI element
   getBraintreeUIElement = clientToken => {
+    PrintElement( clientToken);
     let that = this;
-    PrintElement({
-      msg: "getBraintreeUIElement",
-      token: clientToken
-    });
+    
 
     // create the Braintree UI in the div
     dropin
